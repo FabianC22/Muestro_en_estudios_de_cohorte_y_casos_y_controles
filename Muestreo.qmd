@@ -1,0 +1,1394 @@
+---
+title: "Muestreo para estudios de cohorte y casos y controles"
+author: "Cesar Fabian Tiguaque Castellanos"
+format: html
+editor: visual
+---
+
+## Contenido {.scrollable}
+
+1.  Introducción
+
+2.  ¿ Que es el muestreo en estadística?
+
+3.  Tipo de muestreo
+
+4.  Muestreo en estudios de cohorte
+
+5.  Muestreo en estudios de casos y controles
+
+6.  Ejercicio en clase.
+
+## Introducción {.scrollable}
+
+<p align="justify">
+
+La importancia del muestreo en epidemiologia es fundamental, ya que permite estudiar poblaciones grandes, de tal manera que al realizar muestreo se puede asegurar estadisticamente este tendra las siguientes caracteristicas.
+
+-   Permite estudiar poblaciones grandes de forma eficiente
+
+-   Hace posible obtener estimaciones válidas y representativas
+
+-   Reduce sesgos
+
+-   Permite medir prevalencia e incidencia
+
+-   Ayuda en la vigilancia epidemiológica
+
+-   Optimiza recursos
+
+-   Permite generalizar los resultados
+
+-   Permite estimar la precisión (error y confianza)
+
+En resumen el muestreo permite hacer estudios **eficientes, validos y con recursos limitados**
+
+</p>
+
+## ¿Que es el muestreo en estadística?
+
+<p align="justify">
+
+El muestreo en estadística es el proceso de seleccionar un grupo representativo de una población mas grande para analizarla y en algunos casos realizar inferencia sobre la población. La muestra debe ser finita, manejable y elegida preferentemente aleatoriamente para minimizar sesgos y garantizar fiabilidad en las estimaciones.
+
+</p>
+
+## Tipos de muestro {.scrollable}
+
+1.  Muestreo probabilístico: ( Marco muestral)
+
+    -   Muestreo aleatorio simple: Todos los individuos tienen la misma probabilidad de ser elegidos.
+
+    -   Muestreo sistemático: Se selecciona cada k individuo después de un punto inicial aleatorio.
+
+    -   Muestreo estratificado: Se divide la población en estratos homogéneos. despues se toma una muestra.
+
+    -   Muestreo por conglomerados: La población se divide en grupos (colegios, barrios, empresas, facultades.etc).
+
+    -   Muestreo multietápico: Combinación de varios tipos de muestreo.
+
+2.  Muestreo no probabilístico
+
+    -   Muestreo por conveniencia: Se elige lo disponible.
+
+    -   Muestreo dirigido: Selección de individuos con características específicas.
+
+    -   Muestreo por cuotas: Se fija cuántas personas se necesitan por grupo (edad, sexo, etc.), pero se selecciona de forma no aleatoria.
+
+    -   Muestreo bola de nieve: Un participante refiere a otros.
+
+# Muestreo en estudios de cohorte
+
+## Características del diseño en un estudio de cohortes {.smaller}
+
+Es un estudio observacional y longitudinal que investiga la presencia o ausencia de la exposición de interes, además la ocurrencia del evento se puede determinar de manera prospectiva o retrospectiva.
+
+![](figuras/C1.png){fig-align="center" width="41.1cm"}
+
+# Elección del tamaño muestral
+
+## Contexto para el cálculo de muestras
+
+1.  Si el objetivo es estimar el RR con una precisión relativa especificada.
+2.  Si el objetivo es probar que el RR es estadísticamente diferente de 1.
+3.  Si el objetivo es comparar dos tasas de incidencia.
+
+## Estimar el riesgo relativo con una precisión relativa especificada {.scrollable}
+
+a.  Dos de las siguientes proposiciones:
+
+-   Probabilidad anticipada de enfermar en personas expuestas al factor de interés: $P_1$
+
+-   Probabilidad anticipada de enfermar en personas no expuestas al factor de interés: $P_2$
+
+-   Riesgo Relativo anticipado: $RR=P_1 / P_2$
+
+b.  Nivel de confianza: 100(1-α)%
+
+c.  Precisión relativa: ε
+
+Si cumple con lo anterior se puede calcular el tamaño de muestra n.
+
+$$
+n = \frac{Z_{1-\alpha/2}^2 \left[ \frac{1-P_1}{P_1} + \frac{1-P_2}{P_2} \right]}
+{\ln^2 (1-\varepsilon)}
+$$
+
+## Aplicación {.scrollable}
+
+::: panel-tabset
+### Ejemplo {.smaller}
+
+Supongamos que queremos estudiar la posible asociación de un factor ambiental en la incidencia de una enfermedad respiratoria específica, si deseamos una precisión del $10 \%$, tenemos dos poblaciones semejantes una no expuesta con $P_2 = 0.2$ y una expuesta con $P_1 = 0.4$
+
+```{r}
+#| echo: true
+alpha <- 0.05
+P1 <- 0.5
+P2 <- 0.1
+epsilon <- 0.05
+
+n <- (qnorm(1 - alpha/2)^2 * ((1 - P1)/P1 + (1 - P2)/P2)) / (log(1 - epsilon)^2)
+n
+
+```
+
+Se obtiene $1903.28$ para cada grupo.
+
+### Simulación de parámetros {.smaller}
+
+Se realiza la simulación de parámetros donde $\alpha$ y $\varepsilon$ son fijos, y $P_1$ y $P_2$ son variables.
+
+```{r, echo=FALSE,warning=TRUE}
+#|echo: false
+library(plotly)
+
+calc_n <- function(P1, P2, alpha, epsilon) {
+  n <- (qnorm(1 - alpha/2)^2 * ((1 - P1)/P1 + (1 - P2)/P2)) / (log(1 - epsilon)^2)
+ return(n)
+}
+
+
+grafico<-function(alpha,epsilon) {
+  
+# --- RANGOS VARIABLES ---
+P1_vals <- seq(0.05, 0.95, by = 0.05)
+P2_vals <- seq(0.05, 0.95, by = 0.05)
+
+# --- MATRIZ DE RESULTADOS ---
+z_matrix <- outer(P1_vals, P2_vals,
+                  Vectorize(function(a, b) calc_n(a, b, alpha, epsilon)))
+
+# --- GRAFICO 3D ---
+p1<-plot_ly(
+  x = P1_vals,
+  y = P2_vals,
+  z = z_matrix,
+  type = "surface",
+  colorscale = "Viridis"
+) %>%
+  layout(
+    title = paste("P1 vs P2 para epsilon=",epsilon,"y alpha=",alpha),
+    scene = list(
+      xaxis = list(title = "P1"),
+      yaxis = list(title = "P2"),
+      zaxis = list(title = "n")
+    )
+  )
+
+return(p1)
+}
+
+```
+
+-   Para $\alpha=0.05$ y $\varepsilon=0.1$
+
+```{r, echo=FALSE}
+#|echo: false
+# --- PARAMETROS FIJOS ---
+alpha <- 0.05
+epsilon <- 0.1
+
+grafico(alpha,epsilon)
+
+```
+
+-   Para $\alpha=0.05$ y $\varepsilon=0.3$
+
+```{r, echo=FALSE}
+#|echo: false
+# --- PARAMETROS FIJOS ---
+alpha <- 0.05
+epsilon <- 0.3
+
+grafico(alpha,epsilon)
+
+```
+
+-   Para $\alpha=0.05$ y $\varepsilon=0.6$
+
+```{r, echo=FALSE}
+#|echo: false
+# --- PARAMETROS FIJOS ---
+alpha <- 0.05
+epsilon <- 0.6
+
+grafico(alpha,epsilon)
+
+```
+
+-   Para $\alpha=0.05$ y $\varepsilon=0.9$
+
+```{r, echo=FALSE}
+#|echo: false
+# --- PARAMETROS FIJOS ---
+alpha <- 0.05
+epsilon <- 0.9
+
+grafico(alpha,epsilon)
+
+```
+:::
+
+## Probar que el RR es estadísticamente diferente de 1 {.scrollable}
+
+a.  Prueba de hipótesis: $H_o : RR = 1$ vs $H_a : RR ≠ 1$
+
+b.  Dos de las siguientes propsiciones:
+
+-   Probabilidad anticipada de enfermar en personas expuestas al factor de interés: $P_1$
+
+-   Probabilidad anticipada de enfermar en personas no expuestas al factor de interés: $P_2$
+
+-   Riesgo Relativo anticipado: $RR=P_1 / P_2$
+
+c.  Nivel de confianza: $100(1 − α)\%$
+
+d.  Potencia del test: $100(1 − β)\%$
+
+e.  Cantidad de no expuestos por cada expuesto: r
+
+Si cumple con lo anterior se puede calcular el tamaño de muestra n.
+
+Se utiliza la siguiente expresión:
+
+$$
+n' = \frac{\left[ Z_{1-\alpha/2} \sqrt{(r+1)P_M(1-P_M)} - Z_{1-\beta} \sqrt{rP_1(1-P_1) + P_2(1-P_2)} \right]^2}{r(P_1 - P_2)^2}
+$$
+
+donde:
+
+$$
+P_M = \frac{(P_1 + rP_2)}{(r+1)}
+$$
+
+Asimismo, la mayoría de software estadístico, como EpiDat, propone la corrección de Yates para el cálculo del tamaño muestral:
+
+$$
+n = \frac{n'}{4} \left[ 1 + \sqrt{1 + \frac{2(r+1)}{n' r \left| P_2 - P_1 \right|}} \right]^2
+$$
+
+## Aplicación {.scrollable}
+
+::: panel-tabset
+### Ejemplo {.smaller}
+
+Calcular el tamaño de muestra suponiendo que $P_1 = 0.2$ y $P_2 = 0.1$, $α = 0.05$, $β = 0.2$ y $r = 1$ (un no expuesto por cada expuesto)
+
+```{r}
+#| echo: true
+
+calc_muestra <- function(P1, P2, r, alpha, power){
+
+  # Z's
+  Za <- qnorm(1 - alpha/2)
+  Zb <- qnorm(1-power)   
+
+  # P_M
+  PM <- (P1 + r*P2) / (r + 1)
+
+  # n'
+  n_prime <- (
+    Za*sqrt((r+1)*PM*(1-PM)) -
+      Zb*sqrt(r*P1*(1-P1) + P2*(1-P2))
+  )^2 / ( r*(P1 - P2)^2 )
+
+  # Corrección de Yates
+  n_yates <- (n_prime/4) *
+    ( 1 + sqrt(1 + 2*(r+1)/(n_prime*r*abs(P2-P1))) )^2
+
+  return( n_yates)
+}
+
+
+res <- calc_muestra(
+  P1 = 0.2,
+  P2 = 0.1,
+  r = 1,
+  alpha = 0.05,
+  power = 0.80
+)
+
+res
+```
+
+Entonces el tamaño de muestra calculado es $n = 219$ en ambos grupos por la correción de yates.
+
+### Simulación de parámetros {.smaller}
+
+Se realiza la simulación de parámetros donde $\alpha$, $power$ y $r$ son fijos, y $P_1$ y $P_2$ son variables.
+
+```{r, echo=FALSE}
+#|echo: false
+
+grafico2<-function(r,alpha,power) {
+
+# Secuencias para P1 y P2
+P1_seq <-  seq(0.05, 0.98, by = 0.05)
+P2_seq <-  seq(0.05, 0.98, by = 0.05)
+
+# Crear todas las combinaciones P1-P2
+grid <- expand.grid(P1 = P1_seq, P2 = P2_seq)
+
+# Eliminar combinaciones donde P1 = P2
+grid <- subset(grid, P1 != P2)
+
+# Calcular muestra para cada combinación
+grid$n <- mapply(
+  calc_muestra,
+  P1 = grid$P1,
+  P2 = grid$P2,
+  MoreArgs = list(r = r, alpha = alpha, power = power)
+)
+
+
+
+#  Heatmap
+p2<-ggplot(grid, aes(x = P1, y = P2, fill = n)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "viridis") +
+  labs(
+    title = paste("P1 vs P2 para r=",r,", alpha=",alpha,"y power=",power),
+    x = "P1",
+    y = "P2",
+    fill = "n"
+  ) +
+  theme_minimal(base_size = 14)
+
+return(p2)
+  
+}
+
+
+```
+
+-   Para $\alpha=0.05$,$power=0.8$ y $r=1$
+
+```{r, echo=FALSE}
+#|echo: false
+
+# Valores fijos
+r     <- 1
+alpha <- 0.05
+power <- 0.80
+
+grafico2(r,alpha,power)
+
+```
+
+-   Para $\alpha=0.05$,$power=0.8$ y $r=2$
+
+```{r, echo=FALSE}
+#|echo: false
+
+# Valores fijos
+r     <- 2
+alpha <- 0.05
+power <- 0.80
+
+grafico2(r,alpha,power)
+
+```
+
+-   Para $\alpha=0.05$,$power=0.8$ y $r=3$
+
+```{r, echo=FALSE}
+#|echo: false
+
+# Valores fijos
+r     <- 3
+alpha <- 0.05
+power <- 0.80
+
+grafico2(r,alpha,power)
+
+```
+
+-   Para $\alpha=0.05$,$power=0.8$ y $r=4$
+
+```{r, echo=FALSE}
+#|echo: false
+
+# Valores fijos
+r     <- 4
+alpha <- 0.05
+power <- 0.80
+
+grafico2(r,alpha,power)
+
+```
+
+-   Para $\alpha=0.05$,$power=0.8$ y $r=5$
+
+```{r, echo=FALSE}
+#|echo: false
+
+# Valores fijos
+r     <- 5
+alpha <- 0.05
+power <- 0.80
+
+grafico2(r,alpha,power)
+
+```
+:::
+
+## Comparar dos tasas de incidencia {.scrollable}
+
+a.  Hipótesis nula H₀: μ₁ - μ₂ = 0
+
+b.  Valores anticipados de μ₁ y μ₂
+
+c.  Nivel de confianza: 100(1−α)%
+
+d.  Potencia del test: 100(1−β)%
+
+e.  Hipótesis alternativa H₁:
+
+    -   μ₁ − μ₂ \< 0\
+    -   μ₁ − μ₂ \> 0\
+    -   μ₁ − μ₂ ≠ 0
+
+f.  Duración del estudio: T
+
+Bajo este contexto se aplican las siguientes expresiones.
+
+-   Si el estudio no tiene duración fija (o sea los sujetos se siguen durante toda su vida) se utiliza la siguiente fórmula:
+
+    **Para pruebas de una cola:**
+
+    $$n_1 = \frac{\left[z_{1-\alpha}\sqrt{(1+k)\mu_m^2} + z_{1-\beta}\sqrt{k\mu_1^2 + \mu_2^2}\right]^2}{k(\mu_1 - \mu_2)^2}$$
+
+    donde $\mu_m = (\mu_1 + \mu_2)/2$ y $k$ es el cociente de la cantidad de individuos del segundo grupo ($n_2$) entre la cantidad del primer grupo ($n_1$).
+
+    **Para pruebas de dos colas:**
+
+    $$n_1 = \frac{\left[z_{1-\alpha/2}\sqrt{(1+k)\mu_m^2} + z_{1-\beta}\sqrt{k\mu_1^2 + \mu_2^2}\right]^2}{k(\mu_1 - \mu_2)^2}$$
+
+-   Si el estudio termina antes que todos los individuos experimenten el suceso de interés. Los valores de μ deben modificarse de acuerdo a la siguiente fórmula:
+
+    $$f(\mu) = \frac{\mu^3 T}{\mu T - 1 + \exp(-\mu T)}$$
+
+    Notemos que cuando $T$ tiende a infinito entonces $f(\mu) = \mu^2$.
+
+    La fórmula apropiada para el tamaño de muestra en pruebas de dos colas es:
+
+    $$n_1 = \frac{\left[z_{1-\alpha/2}\sqrt{(1+k)f(\mu_m)} + z_{1-\beta}\sqrt{kf(\mu_1) + f(\mu_2)}\right]^2}{k(\mu_1 - \mu_2)^2}$$
+
+## Aplicación {.scrollable}
+
+::: panel-tabset
+### Ejemplo {.smaller}
+
+Como parte de un estudio de los efectos a largo plazo del ruido, se diseña un estudio de seguimiento de trabajadores de una industria ruidosa y de una ocupación menos ruidosa. Los sujetos serán seguidos de por vida, y periódicamente serán examinados en cuanto a disfunciones auditivas. Una encuesta previa sugiere una tasa de incidencia anual del 25% en dicha industria. ¿Cuántas personas se deberán seguir si queremos saber que esta tasa difiere del promedio nacional de disfunciones auditivas = 10%, con un nivel de significación del 5% y una potencia del 80%?
+
+```{r}
+#| echo: true
+# Parámetros
+mu1  <- 0.25
+mu2  <- 0.10
+alpha <- 0.05
+beta  <- 0.20
+
+# k = n2 / n1  (modifícalo según tu diseño)
+k <- 1   #  n2 = n1
+
+# Cuantiles Z
+z_alpha_2 <- qnorm(1 - alpha/2) 
+z_beta    <- qnorm(1 - beta)      
+
+
+mu_m <- (mu1 + mu2) / 2
+
+# Términos de la fórmula
+term1 <- z_alpha_2 * sqrt((1 + k) * mu_m^2)
+term2 <- z_beta    * sqrt(k * mu1^2 + mu2^2)
+
+# Fórmula final
+n1 <- (term1 + term2)^2 / (k * (mu1 - mu2)^2)
+
+
+# Resultados
+cat("n1 =", n1, "\n")
+
+
+```
+
+Se tiene que para cada grupo se requeririan 23 personas.
+
+Ahora si consideramos que la duración del estudio es de 5 años,tenemos los siguiente.
+
+```{r}
+#| echo: true
+
+t<-5
+
+fu_m<- (mu_m^3 * t)/(mu_m*t-1+exp(-mu_m*t))
+
+fu_1<- (mu1^3 * t)/(mu1*t-1+exp(-mu1*t))
+fu_2<- (mu2^3 * t)/(mu2*t-1+exp(-mu2*t))
+
+# Términos de la fórmula
+termf1 <- z_alpha_2 * sqrt((1 + k) *fu_m )
+termf2 <- z_beta    * sqrt(k * fu_1+ fu_2)
+
+# Fórmula final
+nf1 <- (termf1 + termf2)^2 / (k * (mu1 - mu2)^2)
+nf1
+
+
+```
+
+Se tiene que para cada grupo se requeririan 65 personas.
+
+### Simulación caso seguimiento de por vida {.smaller}
+
+-   Si $n_2=n_1$ es decir $k=1$.
+
+```{r, echo=FALSE}
+#|echo: false
+
+calc_n1 <- function(mu1, mu2) {
+  alpha <- 0.05
+  beta  <- 0.20
+  k     <- 1
+  
+  z_alpha_2 <- qnorm(1 - alpha/2)
+  z_beta    <- qnorm(1 - beta)
+  
+  mu_m <- (mu1 + mu2) / 2
+  
+  term1 <- z_alpha_2 * sqrt((1 + k) * mu_m^2)
+  term2 <- z_beta    * sqrt(k * mu1^2 + mu2^2)
+  
+  n1 <- (term1 + term2)^2 / (k * (mu1 - mu2)^2)
+  return(n1)
+}
+
+
+  
+mu1_vals <- seq(0.05, 0.98, by = 0.05)
+mu2_vals <- seq(0.05, 0.98, by = 0.05)
+
+grid <- expand.grid(mu1 = mu1_vals, mu2 = mu2_vals)
+
+
+grid$n1 <- mapply(calc_n1, grid$mu1, grid$mu2)
+
+
+
+ggplot(grid, aes(x = mu1, y = mu2, fill = n1)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "viridis") +
+  labs(
+    title = "Tamaño muestral n1 donde k=1",
+    x = "mu1",
+    y = "mu2",
+    fill = "n1"
+  ) +
+  theme_minimal(base_size = 14)
+
+
+```
+
+-   Si $n_2>n_1$ es decir $k>1$.
+
+```{r, echo=FALSE}
+#|echo: false
+
+calc_n1 <- function(mu1, mu2) {
+  alpha <- 0.05
+  beta  <- 0.20
+  k     <- 3
+  
+  z_alpha_2 <- qnorm(1 - alpha/2)
+  z_beta    <- qnorm(1 - beta)
+  
+  mu_m <- (mu1 + mu2) / 2
+  
+  term1 <- z_alpha_2 * sqrt((1 + k) * mu_m^2)
+  term2 <- z_beta    * sqrt(k * mu1^2 + mu2^2)
+  
+  n1 <- (term1 + term2)^2 / (k * (mu1 - mu2)^2)
+  return(n1)
+}
+
+
+  
+mu1_vals <- seq(0.05, 0.98, by = 0.05)
+mu2_vals <- seq(0.05, 0.98, by = 0.05)
+
+grid <- expand.grid(mu1 = mu1_vals, mu2 = mu2_vals)
+
+
+grid$n1 <- mapply(calc_n1, grid$mu1, grid$mu2)
+
+
+
+ggplot(grid, aes(x = mu1, y = mu2, fill = n1)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "viridis") +
+  labs(
+    title = "Tamaño muestral n1 donde k=3",
+    x = "mu1",
+    y = "mu2",
+    fill = "n1"
+  ) +
+  theme_minimal(base_size = 14)
+
+
+```
+
+-   Si $n_2<n_1$ es decir $k<1$.
+
+```{r, echo=FALSE}
+#|echo: false
+
+calc_n1 <- function(mu1, mu2) {
+  alpha <- 0.05
+  beta  <- 0.20
+  k     <- 0.1
+  
+  z_alpha_2 <- qnorm(1 - alpha/2)
+  z_beta    <- qnorm(1 - beta)
+  
+  mu_m <- (mu1 + mu2) / 2
+  
+  term1 <- z_alpha_2 * sqrt((1 + k) * mu_m^2)
+  term2 <- z_beta    * sqrt(k * mu1^2 + mu2^2)
+  
+  n1 <- (term1 + term2)^2 / (k * (mu1 - mu2)^2)
+  return(n1)
+}
+
+
+  
+mu1_vals <- seq(0.05, 0.98, by = 0.05)
+mu2_vals <- seq(0.05, 0.98, by = 0.05)
+
+grid <- expand.grid(mu1 = mu1_vals, mu2 = mu2_vals)
+
+
+grid$n1 <- mapply(calc_n1, grid$mu1, grid$mu2)
+
+
+
+ggplot(grid, aes(x = mu1, y = mu2, fill = n1)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "viridis") +
+  labs(
+    title = "Tamaño muestral n1 donde k=0.1",
+    x = "mu1",
+    y = "mu2",
+    fill = "n1"
+  ) +
+  theme_minimal(base_size = 14)
+
+
+```
+
+### Simulación caso T {.smaller}
+
+-   Si $t=5$ y $k=1$.
+
+```{r, echo=FALSE}
+#|echo: false
+
+calc_nf1 <- function(mu1, mu2){
+
+  # Parámetros fijos
+  alpha <- 0.05
+  beta  <- 0.20
+  t     <- 5
+  k     <- 1
+
+  # Cuantiles
+  z_alpha_2 <- qnorm(1 - alpha/2)
+  z_beta    <- qnorm(1 - beta)
+
+  # mu_m
+  mu_m <- (mu1 + mu2) / 2
+
+  # Funciones fu
+  fu_m <- (mu_m^3 * t) / (mu_m * t - 1 + exp(-mu_m * t))
+  fu_1 <- (mu1^3 * t) / (mu1 * t - 1 + exp(-mu1 * t))
+  fu_2 <- (mu2^3 * t) / (mu2 * t - 1 + exp(-mu2 * t))
+
+  # Términos
+  termf1 <- z_alpha_2 * sqrt((1 + k) * fu_m)
+  termf2 <- z_beta    * sqrt(k * fu_1 + fu_2)
+
+  # Fórmula final
+  nf1 <- (termf1 + termf2)^2 / (k * (mu1 - mu2)^2)
+
+  return(nf1)
+}
+
+
+# -----------------------------------------
+# Crear rejilla de valores mu1 y mu2
+# -----------------------------------------
+mu1_vals <- seq(0.05, 0.98, by = 0.05)
+mu2_vals <- seq(0.05, 0.98, by = 0.05)
+
+grid <- expand.grid(mu1 = mu1_vals, mu2 = mu2_vals)
+
+# Evitar combinación inválida mu1 == mu2
+grid <- subset(grid, mu1 != mu2)
+
+# Calcular valores nf1
+grid$nf1 <- mapply(calc_nf1, grid$mu1, grid$mu2)
+
+
+# -----------------------------------------
+# Heatmap con ggplot2
+# -----------------------------------------
+library(ggplot2)
+
+ggplot(grid, aes(x = mu1, y = mu2, fill = nf1)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "plasma", trans = "log", breaks = c(10, 100, 1000, 5000)) +
+  labs(
+    title = "Tamaño muestral para t=5 y k=1 ",
+    x = "mu1",
+    y = "mu2",
+    fill = "nf1"
+  ) +
+  theme_minimal(base_size = 14) + 
+  theme(
+    plot.title = element_text(face = "bold", size = 18),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+```
+
+-   Si $t=5$ y $k=3$.
+
+```{r, echo=FALSE}
+#|echo: false
+
+calc_nf1 <- function(mu1, mu2){
+
+  # Parámetros fijos
+  alpha <- 0.05
+  beta  <- 0.20
+  t     <- 5
+  k     <- 3
+
+  # Cuantiles
+  z_alpha_2 <- qnorm(1 - alpha/2)
+  z_beta    <- qnorm(1 - beta)
+
+  # mu_m
+  mu_m <- (mu1 + mu2) / 2
+
+  # Funciones fu
+  fu_m <- (mu_m^3 * t) / (mu_m * t - 1 + exp(-mu_m * t))
+  fu_1 <- (mu1^3 * t) / (mu1 * t - 1 + exp(-mu1 * t))
+  fu_2 <- (mu2^3 * t) / (mu2 * t - 1 + exp(-mu2 * t))
+
+  # Términos
+  termf1 <- z_alpha_2 * sqrt((1 + k) * fu_m)
+  termf2 <- z_beta    * sqrt(k * fu_1 + fu_2)
+
+  # Fórmula final
+  nf1 <- (termf1 + termf2)^2 / (k * (mu1 - mu2)^2)
+
+  return(nf1)
+}
+
+
+# -----------------------------------------
+# Crear rejilla de valores mu1 y mu2
+# -----------------------------------------
+mu1_vals <- seq(0.05, 0.98, by = 0.05)
+mu2_vals <- seq(0.05, 0.98, by = 0.05)
+
+grid <- expand.grid(mu1 = mu1_vals, mu2 = mu2_vals)
+
+# Evitar combinación inválida mu1 == mu2
+grid <- subset(grid, mu1 != mu2)
+
+# Calcular valores nf1
+grid$nf1 <- mapply(calc_nf1, grid$mu1, grid$mu2)
+
+
+# -----------------------------------------
+# Heatmap con ggplot2
+# -----------------------------------------
+library(ggplot2)
+
+ggplot(grid, aes(x = mu1, y = mu2, fill = nf1)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "plasma", trans = "log", breaks = c(10, 100, 1000, 5000)) +
+  labs(
+    title = "Tamaño muestral para t=5 y k=3 ",
+    x = "mu1",
+    y = "mu2",
+    fill = "nf1"
+  ) +
+  theme_minimal(base_size = 14) + 
+  theme(
+    plot.title = element_text(face = "bold", size = 18),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+```
+
+-   Si $t=5$ y $k=0.1$.
+
+```{r, echo=FALSE}
+#|echo: false
+
+calc_nf1 <- function(mu1, mu2){
+
+  # Parámetros fijos
+  alpha <- 0.05
+  beta  <- 0.20
+  t     <- 5
+  k     <- 0.1
+
+  # Cuantiles
+  z_alpha_2 <- qnorm(1 - alpha/2)
+  z_beta    <- qnorm(1 - beta)
+
+  # mu_m
+  mu_m <- (mu1 + mu2) / 2
+
+  # Funciones fu
+  fu_m <- (mu_m^3 * t) / (mu_m * t - 1 + exp(-mu_m * t))
+  fu_1 <- (mu1^3 * t) / (mu1 * t - 1 + exp(-mu1 * t))
+  fu_2 <- (mu2^3 * t) / (mu2 * t - 1 + exp(-mu2 * t))
+
+  # Términos
+  termf1 <- z_alpha_2 * sqrt((1 + k) * fu_m)
+  termf2 <- z_beta    * sqrt(k * fu_1 + fu_2)
+
+  # Fórmula final
+  nf1 <- (termf1 + termf2)^2 / (k * (mu1 - mu2)^2)
+
+  return(nf1)
+}
+
+
+# -----------------------------------------
+# Crear rejilla de valores mu1 y mu2
+# -----------------------------------------
+mu1_vals <- seq(0.05, 0.98, by = 0.05)
+mu2_vals <- seq(0.05, 0.98, by = 0.05)
+
+grid <- expand.grid(mu1 = mu1_vals, mu2 = mu2_vals)
+
+# Evitar combinación inválida mu1 == mu2
+grid <- subset(grid, mu1 != mu2)
+
+# Calcular valores nf1
+grid$nf1 <- mapply(calc_nf1, grid$mu1, grid$mu2)
+
+
+
+library(ggplot2)
+
+ggplot(grid, aes(x = mu1, y = mu2, fill = nf1)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "plasma", trans = "log", breaks = c(10, 100, 1000, 5000)) +
+  labs(
+    title = "Tamaño muestral para t=5 y k=0.1 ",
+    x = "mu1",
+    y = "mu2",
+    fill = "nf1"
+  ) +
+  theme_minimal(base_size = 14) + 
+  theme(
+    plot.title = element_text(face = "bold", size = 18),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+```
+:::
+
+## Cuándo usar cada tipo de cálculo de tamaño de muestra {.scrollable}
+
+1.  Estimar el RR con una precisión relativa especificada,basicamente estimar un riesgo relativo (RR) y que el intervalo de confianza tenga una precisión predeterminada.
+
+-   Estudios donde ya se sabe que existe asociación, entonces se quiere una medición precisa.
+-   Estudios de cohorte prospectivos que buscan describir la magnitud del riesgo.
+
+2.  Probar que el RR es estadísticamente diferente de 1. Se busca demostrar una diferencia real
+
+-   Evaluar si un medicamento incrementa o reduce el riesgo de un desenlace.
+-   Estudios prospectivos en ocupacional donde se quiere probar si una exposición es peligrosa.
+
+3.  Comparar dos tasas de incidencia.
+
+-   Investigaciones sobre enfermedades crónicas con períodos largos.
+-   Estudios donde el desenlace es raro, pero se acumula persona-tiempo.
+
+# Muestreo en estudios de casos y controles
+
+## Características del diseño de casos y controles {.smaller}
+
+Los estudios de casos y controles son diseños observacionales, analíticos y retrospectivos.
+
+![](figuras/CC1.png){fig-align="center"}
+
+# Elección del tamaño muestral
+
+## Contexto para el cálculo de muestras
+
+1.  Estimar la Razón de Odds (OR) con una precisión relativa especificada.
+
+2.  Probar que la Razón de Odds (OR) difiere significativamente de 1.
+
+## Estimar la Razón de Odds (OR) con una precisión relativa especificada {.scrollable}
+
+Se debe tener lo siguiente:
+
+a.  Dos de los siguientes elementos:
+
+-   **Probabilidad anticipada de la exposición al factor en individuos enfermos:**\
+    $P_1 = \frac{a}{a + b}$
+
+-   **Probabilidad anticipada de la exposición en individuos sanos:**\
+    $P_2 = \frac{c}{c + d}$
+
+-   **Razón de Odds anticipado:**\
+    $OR=\frac{P_1/(1-P_1)}{P_2/(1-P_2)}$
+
+b.  Nivel de confianza: $100(1-\alpha)\%$
+
+c.  Precisión relativa: $\varepsilon$
+
+Se utiliza en este caso la siguiente fórmula para obtener el tamaño muestral:
+
+$$
+n = Z_{1-\alpha/2}^2 \, \frac{ \frac{1}{P_1(1-P_1)} + \frac{1}{P_2(1-P_2)} }{ \ln^2(1-\varepsilon) }
+$$
+
+## Aplicación {.scrollable}
+
+::: panel-tabset
+### Ejemplo {.smaller}
+
+En una región donde el cólera es un problema grave de salud, se supone que el 30% de la población utilizan agua contaminada. Se desea realizar un estudio para estimar el OR con una precisión relativa del 25% (OR anticipado igual a 2) con un 95% de confianza. ¿Cuál es el tamaño de la muestra en los casos de cólera y en los controles?
+
+Tenemos que $P_2 = 0.3$, $OR = 2$,$\varepsilon = 0.25$ y $\alpha = 0.05$.
+
+Calculamos primero $P_1$ mediante:
+
+$$
+P_1 = \frac{P_2}{(1 - P_2)/OR + P_2}
+     = \frac{0.3}{0.7/2 + 0.3}
+     \approx 0.46
+$$
+
+```{r}
+#| echo: true
+n <- function(P1, P2, alpha, eps){
+
+  Za <- qnorm(1 - alpha/2)
+
+  n <- Za^2 * ( 1/(P1*(1-P1)) + 1/(P2*(1-P2)) ) / ( log(1 - eps)^2 )
+
+  return(n)
+}
+
+n(P1 = 0.18, P2 = 0.1, alpha = 0.05, eps =0.05 )
+```
+
+### Simulación {.smaller}
+
+-   Para una precisión relativa de $10 \%$.
+
+```{r, echo=FALSE}
+#|echo: false
+
+calc_n <- function(P1, P2, alpha, eps){
+
+  Za <- qnorm(1 - alpha/2)
+
+  n <- Za^2 * ( 1/(P1*(1-P1)) + 1/(P2*(1-P2)) ) /
+       ( log(1 - eps)^2 )
+
+  return(n)
+}
+
+P1_vals <- seq(0.05, 0.95, by = 0.05)
+P2_vals <- seq(0.05, 0.95, by = 0.05)
+
+grid <- expand.grid(P1 = P1_vals, P2 = P2_vals)
+
+
+alpha <- 0.05
+eps   <- 0.10
+
+grid$n <- calc_n(grid$P1, grid$P2, alpha, eps)
+
+
+ggplot(grid, aes(P1, P2, fill = n)) +
+  geom_tile() +
+  scale_fill_viridis_c() +
+  labs(title = "Tamaño de muestra precisión relativa de 10 %",
+       fill = "n") +
+  theme_minimal()
+
+```
+
+-   Para una precisión relativa de $30 \%$.
+
+```{r, echo=FALSE}
+#|echo: false
+
+calc_n <- function(P1, P2, alpha, eps){
+
+  Za <- qnorm(1 - alpha/2)
+
+  n <- Za^2 * ( 1/(P1*(1-P1)) + 1/(P2*(1-P2)) ) /
+       ( log(1 - eps)^2 )
+
+  return(n)
+}
+
+P1_vals <- seq(0.05, 0.95, by = 0.05)
+P2_vals <- seq(0.05, 0.95, by = 0.05)
+
+grid <- expand.grid(P1 = P1_vals, P2 = P2_vals)
+
+
+alpha <- 0.05
+eps   <- 0.30
+
+grid$n <- calc_n(grid$P1, grid$P2, alpha, eps)
+
+
+ggplot(grid, aes(P1, P2, fill = n)) +
+  geom_tile() +
+  scale_fill_viridis_c() +
+  labs(title = "Tamaño de muestra precisión relativa de 30 %",
+       fill = "n") +
+  theme_minimal()
+
+```
+
+-   Para una precisión relativa de $60 \%$.
+
+```{r, echo=FALSE}
+#|echo: false
+
+calc_n <- function(P1, P2, alpha, eps){
+
+  Za <- qnorm(1 - alpha/2)
+
+  n <- Za^2 * ( 1/(P1*(1-P1)) + 1/(P2*(1-P2)) ) /
+       ( log(1 - eps)^2 )
+
+  return(n)
+}
+
+P1_vals <- seq(0.05, 0.95, by = 0.05)
+P2_vals <- seq(0.05, 0.95, by = 0.05)
+
+grid <- expand.grid(P1 = P1_vals, P2 = P2_vals)
+
+
+alpha <- 0.05
+eps   <- 0.60
+
+grid$n <- calc_n(grid$P1, grid$P2, alpha, eps)
+
+
+ggplot(grid, aes(P1, P2, fill = n)) +
+  geom_tile() +
+  scale_fill_viridis_c() +
+  labs(title = "Tamaño de muestra precisión relativa de 60 %",
+       fill = "n") +
+  theme_minimal()
+
+```
+:::
+
+## Probar que la Razón de Odds (OR) difiere significativamente de 1 {.scrollable}
+
+a.  Hipótesis nula: **H₀:** $OR = 1$
+
+b.  Dos de los siguientes elementos:
+
+-   Probabilidad anticipada de la exposición al factor en individuos enfermos $P_1$
+-   Probabilidad anticipada de la exposición en individuos sanos $P_2$
+-   Razón de Odds anticipado $OR_a$
+
+c.  Nivel de confianza: $100(1-\alpha)\%$
+
+d.  Potencia del test: $100(1-\beta)\%$
+
+e.  Hipótesis alternativa: **Hₐ:** $OR_a \ne 1$
+
+Se utiliza en este caso la siguiente fórmula:
+
+$$
+n' =
+\frac{
+\left[
+Z_{1-\alpha/2}\,\sqrt{(r+1)P_M(1-P_M)}
+\;-\;
+Z_{1-\beta}\,\sqrt{rP_1(1-P_1) + P_2(1-P_2)}
+\right]^2
+}{
+r(P_1 - P_2)^2
+}
+$$
+
+donde:
+
+$$
+P_M = \frac{P_1 + rP_2}{r + 1}
+$$
+
+Con la *corrección de Yates* para el cálculo del tamaño muestral:
+
+$$
+n = 
+\frac{n'}{4}
+\left[
+1
++
+\sqrt{
+1 + 
+\frac{2(r+1)}{
+n'r\,|P_2 - P_1|
+}
+}
+\right]^2
+$$
+
+## Aplicación {.scrollable}
+
+::: panel-tabset
+### Ejemplo {.smaller}
+
+Calcular del tamaño muestral suponiendo que \$P2 = 0.1 \$y $OR = 2.0$, $α = 0.05$, $β = 0.8$ y $r = 1$ (un control por cada caso).
+
+```{r}
+#| echo: true
+
+calc_nprime <- function(P1, P2, r, alpha, beta){
+
+  # Z de alfa y beta
+  Za <- qnorm(1 - alpha/2)
+  Zb <- qnorm(1 - beta)
+
+  # P_M
+  PM <- (P1 + r*P2) / (r + 1)
+
+  # n'
+  nprime <- (
+    (Za * sqrt((r + 1) * PM * (1 - PM)) -
+       Zb * sqrt(r * P1 * (1 - P1) + P2 * (1 - P2))
+    )^2
+  ) /
+    ( r * (P1 - P2)^2 )
+
+  return(nprime)
+}
+
+
+calc_n_yates <- function(nprime, P1, P2, r){
+
+  n <- (nprime / 4) *
+    ( 1 + sqrt(1 + (2 * (r + 1)) / (nprime * r * abs(P2 - P1))) )^2
+
+  return(n)
+}
+
+calc_n_full <- function(P1, P2, r, alpha, beta){
+
+  nprime <- calc_nprime(P1, P2, r, alpha, beta)
+  n_yates <- calc_n_yates(nprime, P1, P2, r)
+
+  return(list(nprime = nprime, n_yates = n_yates))
+}
+
+calc_n_full(P1 = 0.1818, P2 = 0.1, r = 1, alpha = 0.05, beta = 0.80)
+
+```
+
+### Simulación {.smaller}
+
+-   Un control por cada caso.
+
+```{r, echo=FALSE}
+#|echo: false
+
+calc_n_yates_only <- function(P1, P2, r, alpha, beta){
+
+  Za <- qnorm(1 - alpha/2)
+  Zb <- qnorm(1 - beta)
+
+  # P_M
+  PM <- (P1 + r*P2) / (r + 1)
+
+  # n'
+  nprime <- (
+    (Za * sqrt((r + 1) * PM * (1 - PM)) -
+       Zb * sqrt(r * P1 * (1 - P1) + P2 * (1 - P2))
+    )^2
+  ) / ( r * (P1 - P2)^2 )
+
+  # Corrección de Yates
+  n_yates <- (nprime / 4) *
+    (1 + sqrt(1 + (2 * (r + 1)) / (nprime * r * abs(P2 - P1))))^2
+
+  return(n_yates)
+}
+
+P1_vals <- seq(0.05, 0.95, by = 0.05)
+P2_vals <- seq(0.05, 0.95, by = 0.05)
+
+grid <- expand.grid(P1 = P1_vals, P2 = P2_vals)
+
+alpha <- 0.05
+beta  <- 0.20
+r     <- 1
+
+grid$n <- calc_n_yates_only(grid$P1, grid$P2, r, alpha, beta)
+
+
+
+ggplot(grid, aes(P1, P2, fill = n)) +
+  geom_tile() +
+  scale_fill_viridis_c() +
+  labs(title = "Un control por cada caso",
+       fill = "n") +
+  theme_minimal()
+
+```
+
+-   Dos controles por cada caso.
+
+```{r, echo=FALSE}
+#|echo: false
+
+calc_n_yates_only <- function(P1, P2, r, alpha, beta){
+
+  Za <- qnorm(1 - alpha/2)
+  Zb <- qnorm(1 - beta)
+
+  # P_M
+  PM <- (P1 + r*P2) / (r + 1)
+
+  # n'
+  nprime <- (
+    (Za * sqrt((r + 1) * PM * (1 - PM)) -
+       Zb * sqrt(r * P1 * (1 - P1) + P2 * (1 - P2))
+    )^2
+  ) / ( r * (P1 - P2)^2 )
+
+  # Corrección de Yates
+  n_yates <- (nprime / 4) *
+    (1 + sqrt(1 + (2 * (r + 1)) / (nprime * r * abs(P2 - P1))))^2
+
+  return(n_yates)
+}
+
+P1_vals <- seq(0.05, 0.95, by = 0.05)
+P2_vals <- seq(0.05, 0.95, by = 0.05)
+
+grid <- expand.grid(P1 = P1_vals, P2 = P2_vals)
+
+alpha <- 0.05
+beta  <- 0.20
+r     <- 2
+
+grid$n <- calc_n_yates_only(grid$P1, grid$P2, r, alpha, beta)
+
+
+
+ggplot(grid, aes(P1, P2, fill = n)) +
+  geom_tile() +
+  scale_fill_viridis_c() +
+  labs(title = "Dos controles por cada caso",
+       fill = "n") +
+  theme_minimal()
+
+```
+
+-   Tres controles por cada caso.
+
+```{r, echo=FALSE}
+#|echo: false
+
+calc_n_yates_only <- function(P1, P2, r, alpha, beta){
+
+  Za <- qnorm(1 - alpha/2)
+  Zb <- qnorm(1 - beta)
+
+  # P_M
+  PM <- (P1 + r*P2) / (r + 1)
+
+  # n'
+  nprime <- (
+    (Za * sqrt((r + 1) * PM * (1 - PM)) -
+       Zb * sqrt(r * P1 * (1 - P1) + P2 * (1 - P2))
+    )^2
+  ) / ( r * (P1 - P2)^2 )
+
+  # Corrección de Yates
+  n_yates <- (nprime / 4) *
+    (1 + sqrt(1 + (2 * (r + 1)) / (nprime * r * abs(P2 - P1))))^2
+
+  return(n_yates)
+}
+
+P1_vals <- seq(0.05, 0.95, by = 0.05)
+P2_vals <- seq(0.05, 0.95, by = 0.05)
+
+grid <- expand.grid(P1 = P1_vals, P2 = P2_vals)
+
+alpha <- 0.05
+beta  <- 0.20
+r     <- 3
+
+grid$n <- calc_n_yates_only(grid$P1, grid$P2, r, alpha, beta)
+
+
+
+ggplot(grid, aes(P1, P2, fill = n)) +
+  geom_tile() +
+  scale_fill_viridis_c() +
+  labs(title = "Tres controles por cada caso",
+       fill = "n") +
+  theme_minimal()
+
+```
+:::
+
+## Cuándo usar cada tipo de cálculo de tamaño de muestra {.scrollable}
+
+1.  Estimar la Razón de Odds (OR) con una precisión relativa especificada.
+
+-   Estimar la OR entre consumo de alcohol y cáncer gástrico en una región para generar evidencia local.
+
+-   Estimar la asociación entre exposición a pesticidas y enfermedad de Parkinson con un IC95% estrecho.
+
+2.  Probar que la Razón de Odds (OR) difiere significativamente de 1.
+
+-   Evaluar si un contaminante químico aumenta el riesgo de leucemia infantil.
+
+-   Determinar si un fármaco está asociado a eventos adversos.
+
+## Ejercicio en clase {.scrollable}
+
+1.  En una estudio de cohorte, calcular el tamaño de muestra para lo siguiente.
+
+Supongamos que queremos estudiar la posible asociación de un factor ambiental en la incidencia de una enfermedad respiratoria específica, si deseamos una precisión del $5 \%$, tenemos dos poblaciones semejantes una no expuesta con $P_2 = 0.1$ y una expuesta con $P_1 = 0.5$
+
+2.  En una estudio de casos y controles, calcular el tamaño de muestra para lo siguiente.
+
+En una región donde el cólera es un problema grave de salud, se supone que el 10% de la población utilizan agua contaminada. Se desea realizar un estudio para estimar el OR con una precisión relativa del 5% (OR anticipado igual a 2) con un 95% de confianza. ¿Cuál es el tamaño de la muestra en los casos de cólera y en los controles?
+
+## Bibliografía {.smaller}
+
+1.  https://halweb.uc3m.es/esp/Personal/personas/amalonso/esp/bstat-tema6.pdf
+2.  https://halweb.uc3m.es/esp/Personal/personas/amalonso/esp/bstat-tema5.pdf
+3.  https://dsp.facmed.unam.mx/wp-content/uploads/2022/02/Anexo-1C-U-9-Estudios-de-casos-y-controles.-Argimon-J.pdf
+4.  https://mawil.us/wp-content/uploads/2021/10/epidemiologia.pdf
